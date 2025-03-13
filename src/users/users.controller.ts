@@ -24,6 +24,13 @@ export class UsersController {
     return user;
   }
 
+  @UseGuards(AuthGuard('jwt'))
+  @Put('change-password')
+  changePassword(@Req() req: any): Promise<User> {
+    const user: User = req.user as User;
+    return this.usersService.updatePassword(user.id);
+  }
+
   // Need to be admin to access these routes :
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @SetMetadata('roles', [UserRole.ADMIN])

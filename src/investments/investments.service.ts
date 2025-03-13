@@ -1,26 +1,58 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Investment } from './entities/investment.entity';
+import { Repository } from 'typeorm';
 import { CreateInvestmentDto } from './dto/create-investment.dto';
-import { UpdateInvestmentDto } from './dto/update-investment.dto';
+import { Project } from 'src/projects/entities/project.entity';
 
 @Injectable()
 export class InvestmentsService {
-  create(createInvestmentDto: CreateInvestmentDto) {
-    return 'This action adds a new investment';
+  constructor(
+    @InjectRepository(Investment)
+    private investmentsRepository: Repository<Investment>,
+    @InjectRepository(Project)
+    private projectsRepository: Repository<Project>,
+  ) {
   }
 
-  findAll() {
-    return `This action returns all investments`;
+  async create(createInvestmentDto: CreateInvestmentDto): Promise<Investment> {
+    const project = await this.projectsRepository.findOneBy({ id: createInvestmentDto.projectId });
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${createInvestmentDto.projectId} not found`);
+    }
+    const newInvestment = this.investmentsRepository.create(createInvestmentDto);
+    return this.investmentsRepository.save(newInvestment);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} investment`;
+  async findAll(): Promise<Investment[]> {
+    return this.investmentsRepository.find();
   }
 
-  update(id: number, updateInvestmentDto: UpdateInvestmentDto) {
-    return `This action updates a #${id} investment`;
+  async findOne(id: string): Promise<Investment | null> {
+    const investment = await this.investmentsRepository.findOneBy({ id });
+    if (!investment) {
+      throw new NotFoundException(`Investment with ID ${id} not found`);
+    }
+    return investment;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} investment`;
+  async findInvestmentsByProject(projectId: string): Promise<Investment[]> {
+    const project = await this.projectsRepository.findOneBy({ id: projectId });
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+    return this.investmentsRepository.find({ where: { projectId } });
+  }
+
+  async findInvestmentsByUser(userId: string): Promise<Investment[]> {
+    return this.investmentsRepository.find({ where: { userId } });
+  }
+
+  async remove(id: string): Promise<void> {
+    const investment = await this.investmentsRepository.findOneBy({ id });
+    if (!investment) {
+      throw new NotFoundException(`Investment with ID ${id} not found`);
+    }
+    await this.investmentsRepository.delete(id);
   }
 }

@@ -1,5 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert } from 'typeorm';
+import { ManyToMany, JoinTable, OneToMany, Entity, PrimaryGeneratedColumn, Column, BeforeInsert } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Project } from '../../projects/entities/project.entity';
+import { Interest } from '../../interest/entities/interest.entity';
 
 export enum UserRole {
   ENTREPRENEUR = 'entrepreneur',
@@ -27,6 +29,12 @@ export class User {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.ENTREPRENEUR })
   role: UserRole;
 
+  @OneToMany(() => Project, (project) => project.owner)
+  projects: Project[];
+
+  @ManyToMany(() => Interest, (interest) => interest.users)
+  @JoinTable()
+  interests: Interest[];
   @BeforeInsert()
   async hashPassword() {
     this.password = await bcrypt.hash(this.password, 10);

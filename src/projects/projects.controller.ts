@@ -1,34 +1,64 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Put,
+  UseGuards,
+  NotFoundException,
+  SetMetadata,
+} from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { Project } from './entities/project.entity';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from '../auth/roles/roles.guard';
+import { UserRole } from '../users/entities/user.entity';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @SetMetadata('roles', [UserRole.ENTREPRENEUR])
   @Post()
-  create(@Body() createProjectDto: CreateProjectDto) {
+  @UseGuards(AuthGuard('jwt'))
+  create(@Body() createProjectDto: CreateProjectDto): Promise<Project> {
     return this.projectsService.create(createProjectDto);
   }
 
   @Get()
-  findAll() {
+  @UseGuards(AuthGuard('jwt'))
+  findAll(): Promise<Project[]> {
     return this.projectsService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(+id);
+  @UseGuards(AuthGuard('jwt'))
+  async findOne(@Param('id') id: string): Promise<Project> {
+    const project = await this.projectsService.findOne(id);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
+    }
+    return project;
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    return this.projectsService.update(+id, updateProjectDto);
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @SetMetadata('roles', [UserRole.ENTREPRENEUR])
+  @Put(':id')
+  @UseGuards(AuthGuard('jwt'))
+  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto): Promise<Project> {
+    return this.projectsService.update(id, updateProjectDto);
   }
 
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @SetMetadata('roles', [UserRole.ENTREPRENEUR, UserRole.ADMIN])
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.projectsService.remove(+id);
+  @UseGuards(AuthGuard('jwt'))
+  remove(@Param('id') id: string): Promise<void> {
+    return this.projectsService.remove(id);
   }
 }

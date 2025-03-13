@@ -40,4 +40,8 @@ export class AuthService {
     }
     return this.usersService.create(createUserDto);
   }
+
+  async changePassword(id: string): Promise<User> {
+    return this.usersService.updatePassword(id)
+  }
 }
