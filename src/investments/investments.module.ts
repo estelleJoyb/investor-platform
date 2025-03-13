@@ -3,7 +3,7 @@ import { InvestmentsService } from './investments.service';
 import { InvestmentsController } from './investments.controller';
 
 @Module({
+  controllers: [InvestmentsController],
   providers: [InvestmentsService],
-  controllers: [InvestmentsController]
 })
 export class InvestmentsModule {}
